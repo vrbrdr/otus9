@@ -16,7 +16,11 @@ class KeyboardPlayerController : public PlayerController {
 
 #pragma warning(push)
 #pragma warning(disable : 4100)
-    virtual void Exchange(GameState& state) override{};
+    std::shared_ptr<GameState> GetState() override {
+        return nullptr;
+    }
+
+    void SendState(GameState& state) override{};
 #pragma warning(pop)
 
     Directions get_direction() override {

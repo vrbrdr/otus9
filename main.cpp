@@ -1,5 +1,6 @@
 #include "Application.hpp"
 #include <iostream>
+#include<stdexcept>
 
 int main(int argc, char* argv[]) {
     // s 127.0.0.1:34765
@@ -29,8 +30,12 @@ int main(int argc, char* argv[]) {
 
     }
 
-    Application app(stype, ip, port, locals);
-    app.Run();
+    try {
+        Application app(stype, ip, port, locals);
+        app.Run();
+    } catch (const std::exception& ex) {
+        std::cout << "Exception: " << ex.what() << std::endl;
+    }
 
     std::cout << "Exit" << std::endl;
 }

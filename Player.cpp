@@ -25,6 +25,10 @@ void Player::Move(uint64_t move_segments) {
         return;
     }
 
+    if(controller->get_direction()!=Directions::UNDEFINED){
+        snake->direction = controller->get_direction();
+    }
+
     for (int i = 0; i < move_segments; i++) {
         snake->tile_direction =
             snake->TileDirection(snake->body[snake->body.size() - 2],
@@ -33,11 +37,6 @@ void Player::Move(uint64_t move_segments) {
         snake->body.pop_back();
         auto head = snake->body.begin();
         auto new_head = make_head(*head);
-        if (new_head.x == 4)
-            snake->body.insert(head, new_head);
-        else
-            snake->body.insert(head, new_head);
+        snake->body.insert(head, new_head);
     }
-
-    snake->direction = controller->get_direction();
 }

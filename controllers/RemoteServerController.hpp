@@ -9,8 +9,8 @@ class RemoteServerController : public RemoteController {
     uint64_t last_publish_distance = 0;
 
   public:
-    RemoteServerController(std::unique_ptr<NetExchange> connection)
-        : RemoteController(std::move(connection)) {}
+    RemoteServerController(std::shared_ptr<NetExchange> connection)
+        : RemoteController(connection) {}
 
     ~RemoteServerController() override {
         RemoteController::~RemoteController();
@@ -27,23 +27,31 @@ class RemoteServerController : public RemoteController {
             }
         }
     }
+    
 #pragma warning(pop)
+    virtual std::shared_ptr<GameState> GetState() override{
+        auto const& message = connection->Receive();
+        if (!message.IsEmpty()) {
+            return message.GetGameState();
+        }
 
-    void Exchange(GameState& state) override {
+        return nullptr;
+    };
+
+    virtual void SendState(GameState& state) override{
         if (force_publish ||
-            (state.total_distance - last_publish_distance) > 30) {
+            (state.total_distance - last_publish_distance) > 5) {
 
             force_publish = false;
+            auto current_direction = get_direction();
+            if (current_direction == Directions::UNDEFINED) {
+                return;
+            }
             last_publish_distance = state.total_distance;
             connection->Send(Message{
                 player, UserState{state.total_distance, get_direction()}});
-        }
-
-        auto const& message = connection->Receive();
-        if (!message.IsEmpty()) {
-            state.Update(message.player, message.GetGameState());
-        }
-    }
+        }      
+    };
 
     void set_direction(Directions _direction) override {
         force_publish = true;

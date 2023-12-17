@@ -9,24 +9,33 @@ class RemotePlayerController : public RemoteController {
     uint64_t last_publish_distance = 0;
 
   public:
-    RemotePlayerController(std::unique_ptr<NetExchange> connection)
-        : RemoteController(std::move(connection)) {}
+    RemotePlayerController(std::shared_ptr<NetExchange> connection)
+        : RemoteController(connection) {}
 
     ~RemotePlayerController() override {
         RemoteController::~RemoteController();
     }
 
-    virtual void Exchange( GameState& state) override {
-        if ((state.total_distance - last_publish_distance) > 30) {
-            last_publish_distance = state.total_distance;
-
-            connection->Send(Message{player, state});
-        }
-
+#pragma warning(push)
+#pragma warning(disable : 4100)
+    std::shared_ptr<GameState> GetState() override{
         //!!!!!! подумать об использовании total_distance;
         auto const& message = connection->Receive();
         if (!message.IsEmpty()) {
             RemoteController::set_direction(message.GetUserState().direction);
+        }
+
+        return nullptr;
+    };   
+#pragma warning(pop)    
+
+    void SendState(GameState& state) override{
+        if (state.force_exchange ||
+            (state.total_distance - last_publish_distance) > 5) {
+
+            last_publish_distance = state.total_distance;
+
+            connection->Send(Message{player, state});
         }
     };
 

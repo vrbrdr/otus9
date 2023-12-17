@@ -14,7 +14,8 @@ enum class ServerTypes { LOCAL, CLIENT, SERVER };
 class Application {
   private:
     const int SPEED_PER_SEC = 50; //% клетки в секунду
-    std::unique_ptr<RemotePlayerProvider> remotePlayerProvider;
+    const ServerTypes type;
+    std::shared_ptr<RemotePlayerProvider> remotePlayerProvider;
     Players players;
     Canvas canvas;
     std::shared_ptr<sf::RenderWindow> window;
@@ -28,13 +29,15 @@ class Application {
     void Run();
 
   private:
-    void createPlayers(ServerTypes type, uint8_t local_players);
+    void createServerPlayers(uint8_t local_players);
+    void createClientPlayers();
+
     PlayerPtr createLocalPlayer(uint8_t index,
                                 std::array<sf::Keyboard::Key, 4> sf_directions);
     void
     registerKeyboardController(PlayerControllerPtr controller,
                                std::array<sf::Keyboard::Key, 4> sf_directions);
     RemotePlayerProvider*
-    getRemotePlayerProvider(ServerTypes type, const char* ip, uint16_t port);
+    getRemotePlayerProvider(const char* ip, uint16_t port);
     void processEvents();
 };

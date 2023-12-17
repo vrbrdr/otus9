@@ -16,12 +16,12 @@ namespace {
 
         EXPECT_EQ(m_recv.lenght, m_send.lenght);
         EXPECT_EQ(m_recv.player, m_send.player);
-        EXPECT_EQ(s_send.total_distance, s_recv.total_distance);
-        EXPECT_EQ(s_send.foods.size(), s_recv.foods.size());
-        EXPECT_EQ(s_send.snakes.size(), s_recv.snakes.size());
+        EXPECT_EQ(s_send.total_distance, s_recv->total_distance);
+        EXPECT_EQ(s_send.foods.size(), s_recv->foods.size());
+        EXPECT_EQ(s_send.snakes.size(), s_recv->snakes.size());
 
         for (int i = 0; s_send.snakes.size(); ++i) {
-            EXPECT_EQ(s_send.snakes[i], s_recv.snakes[i]);
+            EXPECT_EQ(s_send.snakes[i], s_recv->snakes[i]);
         }
     }
 
@@ -51,13 +51,13 @@ namespace {
 
         EXPECT_EQ(m_recv.lenght, m_send.lenght);
         EXPECT_EQ(m_recv.player, m_send.player);
-        EXPECT_EQ(s_send.total_distance, s_recv.total_distance);
-        EXPECT_EQ(s_send.foods.size(), s_recv.foods.size());
-        EXPECT_EQ(s_send.snakes.size(), s_recv.snakes.size());
+        EXPECT_EQ(s_send.total_distance, s_recv->total_distance);
+        EXPECT_EQ(s_send.foods.size(), s_recv->foods.size());
+        EXPECT_EQ(s_send.snakes.size(), s_recv->snakes.size());
 
         for (int i = 0; i < s_send.snakes.size(); ++i) {
             auto& s1 = *(s_send.snakes[i]);
-            auto& s2 = *(s_recv.snakes[i]);
+            auto& s2 = *(s_recv->snakes[i]);
             auto res = s1.operator==(s2);
             EXPECT_TRUE(res);
         }

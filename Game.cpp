@@ -4,8 +4,15 @@
 #include <stdexcept>
 
 GameState& Game::Init() {
-    for (auto i = 0; i < players.size(); ++i) {
-        init_player(*(players[i].get()), i, players.size());
+    if (is_local) {
+        for (auto i = 0; i < players.size(); ++i) {
+            init_player(*(players[i].get()), i, players.size());
+        }
+
+    } else {
+        for (auto& p : players) {
+            state.snakes.push_back(p->snake);
+        }
     }
 
     return state;
@@ -28,10 +35,8 @@ GameState& Game::CalcState(uint64_t distance_change) {
 
     update_collisions();
     create_food();
-
-    for (auto& player : players) {
-        player->Publish(state);
-    }
+    exchange();
+    state.force_exchange = false;
 
     return state;
 }
@@ -45,6 +50,7 @@ void Game::update_collisions() {
 
         if (check_border(head)) {
             snake->Die();
+            state.force_exchange = true;
             continue;
         }
 
@@ -55,6 +61,7 @@ void Game::update_collisions() {
                                   snake2->index == snake->index)) {
 
                 snake->Die();
+                state.force_exchange = true;
                 break;
             }
         }
@@ -66,6 +73,7 @@ void Game::update_collisions() {
         if (auto food = food_interception(head); food != state.foods.end()) {
             state.foods.erase(food);
             snake->Grow(10);
+            state.force_exchange = true;
         }
     }
 }
@@ -130,6 +138,7 @@ void Game::create_food() {
         }
 
         state.foods.push_back(f);
+        state.force_exchange = true;
         return;
     }
 }
@@ -192,4 +201,10 @@ void Game::init_player(Player& player, int index, size_t total) {
     // Сегмент змеи на 100% находится в этой ячейке
     player.SetDirection(snakeDirection);
     state.snakes.push_back(snake);
+}
+
+void Game::exchange() {
+    for (auto& player : players) {
+        player->Exchange(state);
+    }
 }

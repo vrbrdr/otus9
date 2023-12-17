@@ -10,12 +10,15 @@ class Game {
   private:
     const int INIT_PLAYER_LENGTH = 6;
     GameState state;
-    const Players players;
+    Players players;
+    bool is_local;
 
   public:
-    Game(const Players& players) : players{players} {};
+    Game(bool is_local, const Players& players)
+        : is_local{is_local}, players{players} {};
+
     GameState& Init();
-    GameState& CalcState(uint64_t distance);
+    GameState& CalcState(uint64_t distance);    
 
   private:
     void update_collisions();
@@ -25,4 +28,5 @@ class Game {
     void create_food();
     void init_player(Player &player, int index, size_t total);
     void move_snake(Snake& snake, uint64_t distance);
+    void exchange();
 };

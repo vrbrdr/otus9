@@ -12,7 +12,7 @@
 
 class SfmlNetExchange : public NetExchange {
   private:
-    const std::unique_ptr<sf::TcpSocket> client;
+    const std::shared_ptr<sf::TcpSocket> client;
 
     // размерность MessageHeader::totalLenght  = ushort,т.ч. точно хватит
     const int buf_max_size = 0xffff;
@@ -27,8 +27,8 @@ class SfmlNetExchange : public NetExchange {
     Message Receive() override;
 
   public:
-    SfmlNetExchange(std::unique_ptr<sf::TcpSocket> client)
-        : client{client.release()} {
+    SfmlNetExchange(std::shared_ptr<sf::TcpSocket> client)
+        : client{client} {
 
         this->client->setBlocking(false);
     }
@@ -41,7 +41,7 @@ class SftmTcpGameServer : public RemotePlayerProvider {
     const sf::IpAddress ip;
     const unsigned short port;
     sf::TcpListener listener;
-    std::unique_ptr<sf::TcpSocket> client;
+    std::shared_ptr<sf::TcpSocket> client;
 
   public:
     SftmTcpGameServer(const char* ip, unsigned short port)
@@ -63,14 +63,14 @@ class SftmTcpGameServer : public RemotePlayerProvider {
 
     std::shared_ptr<PlayerController> AcceptClient() override {
         if (!client) {
-            client = std::make_unique<sf::TcpSocket>();
+            client = std::make_shared<sf::TcpSocket>();
         }
 
         switch (listener.accept(*client)) {
         case sf::Socket::Done:
             std::cout << "Connection received" << std::endl;
             return std::make_shared<RemotePlayerController>(
-                std::make_unique<SfmlNetExchange>(std::move(client)));
+                std::make_shared<SfmlNetExchange>(client));
 
         case sf::Socket::NotReady:
             return nullptr;
@@ -85,7 +85,7 @@ class SftmTcpGameClient : public RemotePlayerProvider {
   private:
     const sf::IpAddress ip;
     const unsigned short port;
-    std::unique_ptr<sf::TcpSocket> client;
+    std::shared_ptr<sf::TcpSocket> client;
     std::thread read_thread;
 
   public:
@@ -101,7 +101,7 @@ class SftmTcpGameClient : public RemotePlayerProvider {
         static sf::Time sf_time{};
 
         if (!client) {
-            client = std::make_unique<sf::TcpSocket>();
+            client = std::make_shared<sf::TcpSocket>();
             // client->setBlocking(false);
         }
 
@@ -110,7 +110,7 @@ class SftmTcpGameClient : public RemotePlayerProvider {
             std::cout << "Client connected" << std::endl;
             // client->setBlocking(false);
             return std::make_shared<RemoteServerController>(
-                std::make_unique<SfmlNetExchange>(std::move(client)));
+                std::make_shared<SfmlNetExchange>(client));
         }
 
         std::cout << "Client connecting ..., "

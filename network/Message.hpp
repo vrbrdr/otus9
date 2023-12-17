@@ -41,16 +41,15 @@ struct Message {
 
     Message(const Message& src) = delete;
     Message(Message&& src)
-        : player{src.player}, lenght{src.lenght}, message{src.message} {
+        : message{src.message}, player{src.player}, lenght{src.lenght} {
         src.message = nullptr;
         src.lenght = 0;
     }
 
     Message(uint8_t player, const UserState& state)
-        : message{new unsigned char[lenght]}, player{player},
-          lenght{sizeof(MessageHeader) + sizeof(UserState) +
-                 sizeof(MessageFooter)} {
-
+        : player{player}, lenght{sizeof(MessageHeader) + sizeof(UserState) +
+                                 sizeof(MessageFooter)} {
+        message = new unsigned char[lenght];
         memcpy(message + sizeof(MessageHeader), &state, sizeof(state));
 
         fill();
@@ -142,8 +141,9 @@ struct Message {
         return *((UserState*)(message + sizeof(MessageHeader)));
     }
 
-    GameState GetGameState() const {
-        GameState gs;
+    std::shared_ptr<GameState> GetGameState() const {
+        auto pgs = std::make_shared<GameState>();
+        auto &gs = *pgs;
 
         size_t index = sizeof(MessageHeader);
 
@@ -187,7 +187,7 @@ struct Message {
             }
         }
 
-        return gs;
+        return pgs;
     }
 
   private:

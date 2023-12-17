@@ -20,7 +20,8 @@ class PlayerController {
         return index;
     };
 
-    virtual void Exchange(GameState& state) = 0;
+    virtual std::shared_ptr<GameState> GetState() = 0;
+    virtual void SendState(GameState& state) = 0;
 
     virtual  Directions get_direction() {
         return direction;

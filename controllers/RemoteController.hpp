@@ -6,12 +6,12 @@
 
 class RemoteController : public PlayerController {
   protected:
-    const std::unique_ptr<NetExchange> connection;
+    const std::shared_ptr<NetExchange> connection;
     uint8_t player;
 
   public:
-    RemoteController(std::unique_ptr<NetExchange> connection)
-        : connection{connection.release()} {}
+    RemoteController(std::shared_ptr<NetExchange> connection)
+        : connection{connection} {}
 
     ~RemoteController() override {
         PlayerController::~PlayerController();

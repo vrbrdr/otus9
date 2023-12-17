@@ -11,19 +11,22 @@ class Player {
 
   public:
     SnakePtr snake;
+    uint8_t index;
 
-    Player(uint8_t player, PlayerControllerPtr controller)
-        : controller{controller} {
-        auto real_player = controller->Connect(player);
-        name = std::string{"Player "} + std::to_string(real_player);
-        snake = std::make_shared<Snake>(real_player);
+    Player(uint8_t _player, PlayerControllerPtr controller)
+        :index{_player}, controller{controller} {
+        name = std::string{"Player "} + std::to_string(index);
+        snake = std::make_shared<Snake>(index);
     }
 
     void Move(uint64_t move_segments);
 
-
-    inline void Publish(GameState& state) {
-        controller->Exchange(state);
+    inline void Exchange(GameState& state) {
+        controller->SendState(state);
+        auto new_state = controller->GetState();
+        if(new_state){
+            state.Update(*new_state);
+        }
     }
 
     inline void SetDirection(Directions direction) {

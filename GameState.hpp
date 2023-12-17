@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 #include <vector>
+#include <iostream>
 
 const static uint8_t XSIZE = 30;
 const static uint8_t YSIZE = 30;
@@ -137,31 +138,14 @@ struct GameState {
     uint64_t total_distance = 0;
     Snakes snakes;
     Foods foods;
-    bool initiated = false;
+
+    bool force_exchange =false;
 
     inline uint64_t percent() {
         return total_distance % 100;
     }
 
-    void Update(uint8_t index, GameState&& source) {
-        if (!initiated) {
-            initiated = true;
-            if (snakes.size() != 1) {
-                throw std::logic_error{"snakes.size() != 1"};
-            }
-            auto local_snake = snakes[0];
-            snakes.clear();
-
-            for (int i = 0; i < source.snakes.size(); ++i) {
-                if (i == index) {
-                    local_snake->index = index;
-                    snakes.push_back(local_snake);
-                } else {
-                    snakes.push_back(source.snakes[i]);
-                }
-            }
-        }
-
+    void Update(GameState& source) {
         foods.clear();
 
         total_distance = source.total_distance;

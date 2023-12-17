@@ -31,7 +31,8 @@ void Canvas::draw(GameState& state) {
 
 void Canvas::draw_snake(Snake& snake, size_t reverce_percent) {
     if(snake.body.size() == 0){
-        throw std::logic_error("snake.body.size() == 0");
+        return;
+        //throw std::logic_error("snake.body.size() == 0");
     }
 
     Directions dir;
