@@ -27,7 +27,7 @@ struct FieldPoint final {
 
     FieldPoint& operator=(FieldPoint&& source) noexcept {
         x = source.x;
-        y = source.y; 
+        y = source.y;
         return *this;
     }
 
@@ -55,7 +55,7 @@ using Foods = std::vector<Food>;
 using SnakeSegments = std::vector<SnakeSegment>;
 
 struct Snake {
-    const uint8_t index;
+    uint8_t index;
     Directions direction;
     Directions tile_direction;
     Colors color;
@@ -73,6 +73,7 @@ struct Snake {
 
     void Die() {
         is_die = true;
+        body.clear();
     }
 
     bool IsDie() {
@@ -86,13 +87,15 @@ struct Snake {
 
         direction = source.direction;
         tile_direction = source.tile_direction;
+        is_die = source.is_die;
         body = std::move(source.body);
     }
 
     inline bool operator==(const Snake& other) const noexcept {
         if (!(index == other.index && direction == other.direction &&
               tile_direction == other.tile_direction && color == other.color &&
-              body.size() == other.body.size())) {
+              body.size() == other.body.size() && is_die == other.is_die)) {
+
             return false;
         }
 
@@ -134,12 +137,31 @@ struct GameState {
     uint64_t total_distance = 0;
     Snakes snakes;
     Foods foods;
+    bool initiated = false;
 
     inline uint64_t percent() {
         return total_distance % 100;
     }
 
-    void Update(GameState&& source) {
+    void Update(uint8_t index, GameState&& source) {
+        if (!initiated) {
+            initiated = true;
+            if (snakes.size() != 1) {
+                throw std::logic_error{"snakes.size() != 1"};
+            }
+            auto local_snake = snakes[0];
+            snakes.clear();
+
+            for (int i = 0; i < source.snakes.size(); ++i) {
+                if (i == index) {
+                    local_snake->index = index;
+                    snakes.push_back(local_snake);
+                } else {
+                    snakes.push_back(source.snakes[i]);
+                }
+            }
+        }
+
         foods.clear();
 
         total_distance = source.total_distance;

@@ -11,15 +11,12 @@ GameState& Game::Init() {
     return state;
 }
 
-GameState& Game::CalcState(uint64_t total_distance) {
-    if (state.total_distance > total_distance) {
-        // Такое может быть если state.total_distance был откорректирован с
-        // сервера
-        return state;
-    }
+GameState& Game::CalcState(uint64_t distance_change) {
+    auto total_distance = state.total_distance + distance_change;
 
     auto distance =
         state.total_distance % 100 + total_distance - state.total_distance;
+
     auto move_segments = distance / 100;
     state.total_distance = total_distance;
 
@@ -41,6 +38,9 @@ GameState& Game::CalcState(uint64_t total_distance) {
 
 void Game::update_collisions() {
     for (auto& snake : state.snakes) {
+        if (snake->IsDie()) {
+            continue;
+        }
         auto& head = snake->body[0];
 
         if (check_border(head)) {
@@ -50,7 +50,10 @@ void Game::update_collisions() {
 
         bool erased = false;
         for (auto& snake2 : state.snakes) {
-            if (find_interception(head, *snake2.get(), snake2 == snake)) {
+            if (!snake2->IsDie() &&
+                find_interception(head, *snake2.get(),
+                                  snake2->index == snake->index)) {
+
                 snake->Die();
                 break;
             }
@@ -141,15 +144,16 @@ void Game::init_player(Player& player, int index, size_t total) {
     }
 
     int x, y, dx, dy;
-    Directions currendDirection;
-    switch ((Directions)side_idx) {
+    player.snake->tile_direction = (Directions)side_idx;
+    Directions snakeDirection;
+
+    switch (player.snake->tile_direction) {
     case Directions::UP:
         x = XSIZE / (total_per_side + 1) * side_pos;
         y = 0;
         dx = 0;
         dy = 1;
-        currendDirection = Directions::DOWN;
-        player.snake->tile_direction = Directions::UP;
+        snakeDirection = Directions::DOWN;
         break;
 
     case Directions::DOWN:
@@ -157,8 +161,7 @@ void Game::init_player(Player& player, int index, size_t total) {
         y = YSIZE - 1;
         dx = 0;
         dy = -1;
-        currendDirection = Directions::UP;
-        player.snake->tile_direction = Directions::DOWN;
+        snakeDirection = Directions::UP;
         break;
 
     case Directions::LEFT:
@@ -166,8 +169,7 @@ void Game::init_player(Player& player, int index, size_t total) {
         y = YSIZE / (total_per_side + 1) * side_pos;
         dx = 1;
         dy = 0;
-        currendDirection = Directions::RIGTH;
-        player.snake->tile_direction = Directions::LEFT;
+        snakeDirection = Directions::RIGTH;
         break;
 
     case Directions::RIGTH:
@@ -175,8 +177,7 @@ void Game::init_player(Player& player, int index, size_t total) {
         y = YSIZE / (total_per_side + 1) * side_pos;
         dx = -1;
         dy = 0;
-        currendDirection = Directions::LEFT;
-        player.snake->tile_direction = Directions::RIGTH;
+        snakeDirection = Directions::LEFT;
         break;
 
     default:
@@ -189,6 +190,6 @@ void Game::init_player(Player& player, int index, size_t total) {
     }
 
     // Сегмент змеи на 100% находится в этой ячейке
-    player.SetDirection(currendDirection);
+    player.SetDirection(snakeDirection);
     state.snakes.push_back(snake);
 }

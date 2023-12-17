@@ -17,7 +17,7 @@ void Canvas::draw(GameState& state) {
     window->clear(sf::Color::White);
 
     for (auto snake : state.snakes) {
-        if(!snake->IsDie()){
+        if (!snake->IsDie()) {
             draw_snake(*snake, 100 - state.percent());
         }
     }
@@ -30,8 +30,12 @@ void Canvas::draw(GameState& state) {
 }
 
 void Canvas::draw_snake(Snake& snake, size_t reverce_percent) {
+    if(snake.body.size() == 0){
+        throw std::logic_error("snake.body.size() == 0");
+    }
+
     Directions dir;
-    for (int i = 0; i < snake.body.size() - 1; ++i) {
+    for (int i = 0; i + 1 < snake.body.size(); ++i) {
         auto& seg = snake.body[i];
         dir = snake.TileDirection(seg, snake.body[i + 1]);
 

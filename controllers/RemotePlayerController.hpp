@@ -2,35 +2,35 @@
 
 #include "../network/Message.hpp"
 #include "../network/Network.hpp"
-#include "PlayerController.hpp"
+#include "RemoteController.hpp"
 
-class RemotePlayerController : public PlayerController {
+class RemotePlayerController : public RemoteController {
   private:
-    const std::unique_ptr<NetExchange> connection;
+    uint64_t last_publish_distance = 0;
 
   public:
     RemotePlayerController(std::unique_ptr<NetExchange> connection)
-        : connection{connection.release()} {}
+        : RemoteController(std::move(connection)) {}
 
     ~RemotePlayerController() override {
-        PlayerController::~PlayerController();
+        RemoteController::~RemoteController();
     }
 
-    uint8_t Connect(uint8_t index) override {
-        return index;
-    }
+    virtual void Exchange( GameState& state) override {
+        if ((state.total_distance - last_publish_distance) > 30) {
+            last_publish_distance = state.total_distance;
 
-    virtual void Publish(uint8_t player, GameState& state) override {
-        connection->Send(Message{player, state});
-    };
+            connection->Send(Message{player, state});
+        }
 
-    virtual Directions get_direction() override {
         //!!!!!! подумать об использовании total_distance;
         auto const& message = connection->Receive();
         if (!message.IsEmpty()) {
-            PlayerController::set_direction(message.GetUserState().direction);
+            RemoteController::set_direction(message.GetUserState().direction);
         }
+    };
 
-        return PlayerController::get_direction();
+    virtual Directions get_direction() override {
+        return RemoteController::get_direction();
     }
 };

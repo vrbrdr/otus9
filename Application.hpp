@@ -18,8 +18,7 @@ class Application {
     Players players;
     Canvas canvas;
     std::shared_ptr<sf::RenderWindow> window;
-    std::map<sf::Keyboard::Key,
-             std::pair<Directions, std::shared_ptr<KeyboardPlayerController>>>
+    std::map<sf::Keyboard::Key, std::pair<Directions, PlayerControllerPtr>>
         key_mapping;
 
   public:
@@ -29,9 +28,12 @@ class Application {
     void Run();
 
   private:
-    void createPlayers(uint8_t local_players);
+    void createPlayers(ServerTypes type, uint8_t local_players);
     PlayerPtr createLocalPlayer(uint8_t index,
                                 std::array<sf::Keyboard::Key, 4> sf_directions);
+    void
+    registerKeyboardController(PlayerControllerPtr controller,
+                               std::array<sf::Keyboard::Key, 4> sf_directions);
     RemotePlayerProvider*
     getRemotePlayerProvider(ServerTypes type, const char* ip, uint16_t port);
     void processEvents();

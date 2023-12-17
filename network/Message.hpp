@@ -175,6 +175,10 @@ struct Message {
 
                 snake->direction = sinfos[snake_idx].direction;
                 snake->tile_direction = sinfos[snake_idx].tile_direction;
+                
+                if (sinfos[snake_idx].IsDie) {
+                    snake->Die();
+                }
 
                 for (int segment = 0; segment < sinfos[snake_idx].size;
                      ++segment, ++idx) {
@@ -221,10 +225,12 @@ struct Message {
         Directions direction;
         Directions tile_direction;
         size_t size;
+        bool IsDie;
 
         SnakeInfo(Snake& snake)
             : index{snake.index}, direction{snake.direction},
-              tile_direction{snake.tile_direction}, size{snake.body.size()} {}
+              tile_direction{snake.tile_direction}, size{snake.body.size()},
+              IsDie{snake.IsDie()} {}
     };
 };
 

@@ -1,18 +1,19 @@
 #pragma once
 
 #include "../network/Network.hpp"
-#include "KeyboardPlayerController.hpp"
+#include "RemoteController.hpp"
 
-class RemoteServerController : public KeyboardPlayerController {
+class RemoteServerController : public RemoteController {
   private:
-    const std::unique_ptr<NetExchange> connection;
+    bool force_publish = true;
+    uint64_t last_publish_distance = 0;
 
   public:
     RemoteServerController(std::unique_ptr<NetExchange> connection)
-        : connection{connection.release()} {}
+        : RemoteController(std::move(connection)) {}
 
     ~RemoteServerController() override {
-        KeyboardPlayerController::~KeyboardPlayerController();
+        RemoteController::~RemoteController();
     }
 
 #pragma warning(push)
@@ -21,19 +22,31 @@ class RemoteServerController : public KeyboardPlayerController {
         for (;;) {
             auto const& message = connection->Receive();
             if (!message.IsEmpty()) {
-                return message.player;
+                player = message.player;
+                return RemoteController::Connect(player);
             }
         }
     }
 #pragma warning(pop)
 
-    void Publish(uint8_t player, GameState& state) override {
-        connection->Send(
-            Message{player, UserState{state.total_distance, get_direction()}});
+    void Exchange(GameState& state) override {
+        if (force_publish ||
+            (state.total_distance - last_publish_distance) > 30) {
+
+            force_publish = false;
+            last_publish_distance = state.total_distance;
+            connection->Send(Message{
+                player, UserState{state.total_distance, get_direction()}});
+        }
 
         auto const& message = connection->Receive();
         if (!message.IsEmpty()) {
-            state.Update(message.GetGameState());
+            state.Update(message.player, message.GetGameState());
         }
+    }
+
+    void set_direction(Directions _direction) override {
+        force_publish = true;
+        return PlayerController::set_direction(_direction);
     }
 };

@@ -6,24 +6,24 @@
 
 class Player {
   private:
-    uint8_t index;
     std::string name;
     PlayerControllerPtr controller;
 
   public:
-    const SnakePtr snake;
+    SnakePtr snake;
 
-    Player(uint8_t index, PlayerControllerPtr controller)
-        : index{index}, name{std::string{"Player "} + std::to_string(index)},
-          controller{controller}, snake{std::make_shared<Snake>(index)} {
-
-        index = controller->Connect(index);
+    Player(uint8_t player, PlayerControllerPtr controller)
+        : controller{controller} {
+        auto real_player = controller->Connect(player);
+        name = std::string{"Player "} + std::to_string(real_player);
+        snake = std::make_shared<Snake>(real_player);
     }
 
     void Move(uint64_t move_segments);
 
+
     inline void Publish(GameState& state) {
-        controller->Publish(index, state);
+        controller->Exchange(state);
     }
 
     inline void SetDirection(Directions direction) {
@@ -35,8 +35,12 @@ class Player {
         return snake->IsDie();
     }
 
+    inline PlayerControllerPtr getControler() {
+        return controller;
+    }
+
   private:
-    SnakeSegment make_head( SnakeSegment& segment);
+    SnakeSegment make_head(SnakeSegment& segment);
 };
 
 using PlayerPtr = std::shared_ptr<Player>;

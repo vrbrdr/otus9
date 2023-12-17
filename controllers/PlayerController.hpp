@@ -7,23 +7,37 @@
 
 class PlayerController {
   public:
-    PlayerController() {}
+    PlayerController() {
+        reverse[(int)Directions::UP] = Directions::DOWN;
+        reverse[(int)Directions::DOWN] = Directions::UP;
+        reverse[(int)Directions::LEFT] = Directions::RIGTH;
+        reverse[(int)Directions::RIGTH] = Directions::LEFT;
+    }
+    
     virtual ~PlayerController() {};
 
-    virtual uint8_t Connect(uint8_t index) = 0;
-    
-    virtual void Publish(uint8_t player, GameState& state) = 0;
+    virtual uint8_t Connect(uint8_t index) {
+        return index;
+    };
 
-    virtual Directions get_direction() {
+    virtual void Exchange(GameState& state) = 0;
+
+    virtual  Directions get_direction() {
         return direction;
     };
 
-    inline void set_direction(Directions _direction) {
+    virtual void set_direction(Directions _direction) {
+              // Блокируем разворот на 180
+        if (reverse[(int)(_direction)] == get_direction()) {
+            return;
+        }
+
         direction = _direction;
     };
 
   private:
-    std::atomic<Directions> direction;
+    std::array<Directions, 4> reverse;
+    Directions direction = Directions::UNDEFINED;
 };
 
 using PlayerControllerPtr = std::shared_ptr<PlayerController>;

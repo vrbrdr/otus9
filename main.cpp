@@ -7,6 +7,7 @@ int main(int argc, char* argv[]) {
     auto stype = ServerTypes::LOCAL;
     const char* ip = "127.0.0.1";
     uint16_t port = 34765;
+    uint8_t locals=1;
 
     if (argc > 1) {
         auto arg1 = toupper(argv[1][0]);
@@ -16,11 +17,19 @@ int main(int argc, char* argv[]) {
 
         } else if (arg1 == 'C') {
             stype = ServerTypes::CLIENT;
+            locals = 0;
             std::cout << "Client:\\" << ip << ":" << port << std::endl;
+        }else if (arg1 == '1') {
+            stype = ServerTypes::LOCAL;
+            locals = 1;
+        }else if (arg1 == '2') {
+            stype = ServerTypes::LOCAL;
+            locals = 1;
         }
+
     }
 
-    Application app(stype, ip, port, (uint8_t) 1);
+    Application app(stype, ip, port, locals);
     app.Run();
 
     std::cout << "Exit" << std::endl;

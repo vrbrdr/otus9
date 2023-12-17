@@ -3,16 +3,8 @@
 #include "PlayerController.hpp"
 
 class KeyboardPlayerController : public PlayerController {
-  private:
-    std::array<Directions, 4> reverse;
-
   public:
-    KeyboardPlayerController() {
-        reverse[(int)Directions::UP] = Directions::DOWN;
-        reverse[(int)Directions::DOWN] = Directions::UP;
-        reverse[(int)Directions::LEFT] = Directions::RIGTH;
-        reverse[(int)Directions::RIGTH] = Directions::LEFT;
-    }
+    KeyboardPlayerController() {}
 
     ~KeyboardPlayerController() override {
         PlayerController::~PlayerController();
@@ -24,15 +16,14 @@ class KeyboardPlayerController : public PlayerController {
 
 #pragma warning(push)
 #pragma warning(disable : 4100)
-    virtual void Publish(uint8_t player, GameState& state) override{};
+    virtual void Exchange(GameState& state) override{};
 #pragma warning(pop)
 
-    inline void KeyPressed(Directions _direction) {
-        // Блокируем разворот на 180
-        if (reverse[(int)(_direction)] == get_direction()) {
-            return;
-        }
+    Directions get_direction() override {
+        return PlayerController::get_direction();
+    }
 
-        set_direction(_direction);
+    void set_direction(Directions _direction) override {
+        return PlayerController::set_direction(_direction);
     }
 };

@@ -33,7 +33,10 @@ void Player::Move(uint64_t move_segments) {
         snake->body.pop_back();
         auto head = snake->body.begin();
         auto new_head = make_head(*head);
-        snake->body.insert(head, new_head);
+        if (new_head.x == 4)
+            snake->body.insert(head, new_head);
+        else
+            snake->body.insert(head, new_head);
     }
 
     snake->direction = controller->get_direction();

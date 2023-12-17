@@ -26,14 +26,13 @@ namespace {
 Application::Application(ServerTypes type, const char* ip, uint16_t port,
                          uint8_t local_players)
     : canvas{make_header(type, ip, port)} {
-    
+
     window = canvas.window;
 
     remotePlayerProvider = std::unique_ptr<RemotePlayerProvider>(
         getRemotePlayerProvider(type, ip, port));
 
-    createPlayers(local_players);
-
+    createPlayers(type, local_players);
 }
 
 void Application::Run() {
@@ -43,6 +42,8 @@ void Application::Run() {
     canvas.draw(state);
 
     const auto start = std::chrono::high_resolution_clock::now();
+    uint64_t prev_distance = 0;
+    
     while (window->isOpen()) {
         auto now = std::chrono::high_resolution_clock::now();
         auto total_duration =
@@ -50,26 +51,33 @@ void Application::Run() {
 
         auto total_distance = SPEED_PER_SEC * total_duration.count() / 1000;
 
-        state = game.CalcState(total_distance);
+        state = game.CalcState(total_distance - prev_distance);
+        prev_distance = total_distance;
 
         canvas.draw(state);
         processEvents();
     }
 }
 
-void Application::createPlayers(uint8_t local_players) {
+void Application::createPlayers(ServerTypes type, uint8_t local_players) {
+    static std::array<sf::Keyboard::Key, 4> p1_keys = {
+        sf::Keyboard::Key::Up, sf::Keyboard::Key::Down, sf::Keyboard::Key::Left,
+        sf::Keyboard::Key::Right};
+
+    static std::array<sf::Keyboard::Key, 4> p2_keys = {
+        sf::Keyboard::Key::W, sf::Keyboard::Key::S, sf::Keyboard::Key::A,
+        sf::Keyboard::Key::D};
+
     switch (local_players) {
     case 0:
         break;
 
     case 2:
-        players.push_back(
-            createLocalPlayer(2, {sf::Keyboard::Key::W, sf::Keyboard::Key::S,
-                                  sf::Keyboard::Key::A, sf::Keyboard::Key::D}));
+        players.push_back(createLocalPlayer(1, p2_keys));
+        break;
+
     case 1:
-        players.push_back(createLocalPlayer(
-            1, {sf::Keyboard::Key::Up, sf::Keyboard::Key::Down,
-                sf::Keyboard::Key::Left, sf::Keyboard::Key::Right}));
+        players.push_back(createLocalPlayer(0, p1_keys));
         break;
 
     default:
@@ -85,8 +93,13 @@ void Application::createPlayers(uint8_t local_players) {
     const auto timeout = std::chrono::high_resolution_clock::now() +
                          std::chrono::seconds{timeoutsec};
 
-    while (window->isOpen() && std::chrono::high_resolution_clock::now() < timeout) {
+    while (window->isOpen() &&
+           std::chrono::high_resolution_clock::now() < timeout) {
         auto controller = remotePlayerProvider->AcceptClient();
+        if (type == ServerTypes::CLIENT) {
+            registerKeyboardController(controller, p1_keys);
+        }
+
         if (controller) {
             players.push_back(std::make_shared<Player>(
                 local_players, std::shared_ptr<PlayerController>(controller)));
@@ -100,18 +113,22 @@ void Application::createPlayers(uint8_t local_players) {
 PlayerPtr
 Application::createLocalPlayer(uint8_t index,
                                std::array<sf::Keyboard::Key, 4> sf_directions) {
+    auto controller = std::make_shared<KeyboardPlayerController>();
+    registerKeyboardController(controller, sf_directions);
+
+    return std::make_shared<Player>(index, controller);
+}
+
+void Application::registerKeyboardController(
+    PlayerControllerPtr controller, std::array<sf::Keyboard::Key, 4> sf_directions) {
 
     static std::array directions{Directions::UP, Directions::DOWN,
                                  Directions::LEFT, Directions::RIGTH};
-
-    auto controller = std::make_shared<KeyboardPlayerController>();
 
     for (int i = 0; i < directions.size(); i++) {
         key_mapping.emplace(sf_directions[i],
                             std::pair{directions[i], controller});
     }
-
-    return std::make_shared<Player>(index, controller);
 }
 
 RemotePlayerProvider* Application::getRemotePlayerProvider(ServerTypes type,
@@ -142,7 +159,7 @@ void Application::processEvents() {
         case sf::Event::EventType::KeyPressed:
             const auto& mapitem = key_mapping.find(event.key.code);
             if (mapitem != key_mapping.end()) {
-                mapitem->second.second->KeyPressed(mapitem->second.first);
+                mapitem->second.second->set_direction(mapitem->second.first);
             }
         }
     }
