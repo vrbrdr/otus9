@@ -6,35 +6,50 @@
 #include <iostream>
 #include <stdexcept>
 
-Canvas::Canvas()
-    : window{{(unsigned int)(XSIZE * scale), (unsigned int)(YSIZE * scale)},
-             "Snake game",
-             sf::Style::Titlebar | sf::Style::Close,
-             sf::ContextSettings(0, 0, 4)} {}
+Canvas::Canvas(std::string header)
+    : window{std::make_shared<sf::RenderWindow>(
+          sf::VideoMode{(unsigned int)(XSIZE * scale),
+                        (unsigned int)(YSIZE * scale)},
+          header, sf::Style::Titlebar | sf::Style::Close,
+          sf::ContextSettings(0, 0, 4))} {}
 
 void Canvas::draw(GameState& state) {
-    window.clear(sf::Color::White);
+    window->clear(sf::Color::White);
 
     for (auto snake : state.snakes) {
-        draw_snake(*snake);
+        if(!snake->IsDie()){
+            draw_snake(*snake, 100 - state.percent());
+        }
     }
 
     for (auto& food : state.foods) {
         draw_food(food);
     }
 
-    window.display();
+    window->display();
 }
 
-void Canvas::draw_snake(Snake& snake) {
-    draw_snake_head(snake, snake.body[0]);
+void Canvas::draw_snake(Snake& snake, size_t reverce_percent) {
+    Directions dir;
+    for (int i = 0; i < snake.body.size() - 1; ++i) {
+        auto& seg = snake.body[i];
+        dir = snake.TileDirection(seg, snake.body[i + 1]);
 
-    for (int i = 1; i < snake.body.size(); ++i) {
-        draw_snake_segment(snake, snake.body[i]);
+        if (i == 0) {
+            draw_snake_head(snake, seg, reverce_percent, dir);
+        } else {
+            draw_snake_segment(snake, seg, reverce_percent, dir);
+        }
     }
+
+    draw_snake_segment(snake, snake.body[snake.body.size() - 1],
+                       reverce_percent, snake.tile_direction);
 }
 
-void Canvas::draw_snake_segment(Snake& snake, SnakeSegment& head) {
+void Canvas::draw_snake_segment(Snake& snake, SnakeSegment& head,
+                                size_t reverce_percent,
+                                Directions tile_directon) {
+
     float scaled_x = (float)head.x * scale;
     float scaled_y = (float)head.y * scale;
 
@@ -44,12 +59,44 @@ void Canvas::draw_snake_segment(Snake& snake, SnakeSegment& head) {
     sf::RectangleShape rect(br - tl);
 
     rect.setPosition(tl);
-    rect.setFillColor(sf::Color::Black);
+    switch (snake.color) {
+    case Colors::RED:
+        rect.setFillColor(sf::Color::Red);
+        break;
 
-    window.draw(rect);
+    case Colors::GREEN:
+        rect.setFillColor(sf::Color::Green);
+        break;
+
+    case Colors::BLUE:
+        rect.setFillColor(sf::Color::Blue);
+        break;
+
+    case Colors::YELLOW:
+        rect.setFillColor(sf::Color::Yellow);
+        break;
+
+    case Colors::MAGENTA:
+        rect.setFillColor(sf::Color::Magenta);
+        break;
+
+    case Colors::CYAN:
+        rect.setFillColor(sf::Color::Cyan);
+        break;
+
+    default:
+        rect.setFillColor(sf::Color::Black);
+    }
+
+    if (tile_directon != Directions::UNDEFINED) {
+        move_back(tile_directon, reverce_percent, &rect);
+    }
+
+    window->draw(rect);
 }
 
-void Canvas::draw_snake_head(Snake& snake, SnakeSegment& serment) {
+void Canvas::draw_snake_head(Snake& snake, SnakeSegment& serment,
+                             size_t reverce_percent, Directions tile_directon) {
     float fscale = (float)scale;
     float fscale4 = (float)scale / 4;
 
@@ -64,7 +111,8 @@ void Canvas::draw_snake_head(Snake& snake, SnakeSegment& serment) {
     rect.setPosition(tl);
     rect.setFillColor(sf::Color::Black);
 
-    window.draw(rect);
+    move_back(tile_directon, reverce_percent, &rect);
+    window->draw(rect);
 
     switch (snake.direction) {
     case Directions::UP:
@@ -92,7 +140,8 @@ void Canvas::draw_snake_head(Snake& snake, SnakeSegment& serment) {
     }
 
     rect.setFillColor(sf::Color::Red);
-    window.draw(rect);
+    move_back(tile_directon, reverce_percent, &rect);
+    window->draw(rect);
 }
 
 void Canvas::draw_food(Food& food) {
@@ -107,5 +156,33 @@ void Canvas::draw_food(Food& food) {
     rect.setPosition(tl);
     rect.setFillColor(sf::Color::Green);
 
-    window.draw(rect);
+    window->draw(rect);
+}
+
+void Canvas::move_back(Directions direction, uint64_t reverce_percent,
+                       sf::Shape* shape) {
+    auto pos = shape->getPosition();
+
+    switch (direction) {
+    case Directions::UP:
+        pos.y -= scale * reverce_percent / 100;
+        break;
+
+    case Directions::DOWN:
+        pos.y += scale * reverce_percent / 100;
+        break;
+
+    case Directions::LEFT:
+        pos.x -= scale * reverce_percent / 100;
+        break;
+
+    case Directions::RIGTH:
+        pos.x += scale * reverce_percent / 100;
+        break;
+
+    default:
+        throw std::logic_error("invalid direction");
+    }
+
+    shape->setPosition(pos);
 }

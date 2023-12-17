@@ -2,6 +2,14 @@ cmake_minimum_required(VERSION 3.16)
 project(snake LANGUAGES CXX)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR
+    CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(-g -Wall -Wextra -Werror -pedantic)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    add_compile_options(/EHsc /W4 /WX)
+endif()
+
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 
 include(FetchContent)
@@ -10,14 +18,36 @@ FetchContent_Declare(SFML
     GIT_TAG 2.6.x)
 FetchContent_MakeAvailable(SFML)
 
-file(GLOB allsrc
-     "*.hpp"
-     "*.cpp"
+set(COMMON_SRCS
+controllers/KeyboardPlayerController.hpp
+controllers/PlayerController.hpp
+controllers/RemotePlayerController.hpp
+controllers/RemoteServerController.hpp
+
+network/Message.hpp
+network/Network.hpp
+network/SfmtNetwork.hpp
+
+Application.cpp
+Application.hpp
+Canvas.cpp
+Canvas.hpp
+Game.cpp
+Game.hpp
+GameState.hpp
+Player.cpp
+Player.hpp
 )
 
-add_executable(snake  ${allsrc})
+add_subdirectory(tests)
+add_executable(snake main.cpp ${COMMON_SRCS})
 
-target_link_libraries(snake PRIVATE sfml-graphics)
+target_link_libraries(snake 
+    PRIVATE 
+    sfml-graphics
+    sfml-network
+)
+
 target_compile_features(snake PRIVATE cxx_std_17)
 
 if(WIN32)

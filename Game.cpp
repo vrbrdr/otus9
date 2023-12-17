@@ -5,40 +5,53 @@
 
 GameState& Game::Init() {
     for (auto i = 0; i < players.size(); ++i) {
-        init_player(players[i], i, players.size());
+        init_player(*(players[i].get()), i, players.size());
     }
 
     return state;
 }
 
 GameState& Game::CalcState(uint64_t total_distance) {
-    auto distance = total_distance - state.total_distance;
-    state.total_distance = total_distance;
-
-    for (auto player : players) {
-        player->Move(distance);
+    if (state.total_distance > total_distance) {
+        // Такое может быть если state.total_distance был откорректирован с
+        // сервера
+        return state;
     }
 
-    update_deaths();
+    auto distance =
+        state.total_distance % 100 + total_distance - state.total_distance;
+    auto move_segments = distance / 100;
+    state.total_distance = total_distance;
+
+    for (auto& player : players) {
+        if (!player->IsDie()) {
+            player->Move(move_segments);
+        }
+    }
+
+    update_collisions();
     create_food();
 
+    for (auto& player : players) {
+        player->Publish(state);
+    }
+
     return state;
-};
+}
 
-void Game::update_deaths() {
-    for (auto snake1 = state.snakes.begin(); snake1 != state.snakes.end();) {
-        auto& header1 = (*snake1)->body[0];
+void Game::update_collisions() {
+    for (auto& snake : state.snakes) {
+        auto& head = snake->body[0];
 
-        if (check_border(header1)) {
-            snake1 = state.snakes.erase(snake1);
+        if (check_border(head)) {
+            snake->Die();
             continue;
         }
 
         bool erased = false;
-        for (auto snake2 : state.snakes) {
-            if (find_interception(header1, snake2, snake2 == *snake1)) {
-                snake1 = state.snakes.erase(snake1);
-                erased = true;
+        for (auto& snake2 : state.snakes) {
+            if (find_interception(head, *snake2.get(), snake2 == snake)) {
+                snake->Die();
                 break;
             }
         }
@@ -47,12 +60,10 @@ void Game::update_deaths() {
             continue;
         }
 
-        if (auto food = food_interception(header1); food != state.foods.end()) {
+        if (auto food = food_interception(head); food != state.foods.end()) {
             state.foods.erase(food);
-            (*snake1)->grow_percent += 100;
+            snake->Grow(10);
         }
-
-        ++snake1;
     }
 }
 
@@ -60,8 +71,8 @@ bool Game::check_border(SnakeSegment& p) {
     return p.x < 0 || p.y < 0 || p.x >= XSIZE || p.y >= YSIZE;
 }
 
-bool Game::find_interception(FieldPoint& p, SnakePtr snake, bool skip_head) {
-    for (auto& s : snake->body) {
+bool Game::find_interception(FieldPoint& p, Snake& snake, bool skip_head) {
+    for (auto& s : snake.body) {
         if (skip_head) {
             skip_head = false;
             continue;
@@ -105,12 +116,12 @@ void Game::create_food() {
         for (auto snake1 = state.snakes.begin(); snake1 != state.snakes.end();
              ++snake1) {
 
-            if (find_interception(f, *snake1, false)) {
+            if (find_interception(f, *(snake1->get()), false)) {
                 find = true;
                 break;
             }
         }
-        
+
         if (find) {
             continue;
         }
@@ -120,7 +131,7 @@ void Game::create_food() {
     }
 }
 
-void Game::init_player(PlayerPtr player, int index, size_t total) {
+void Game::init_player(Player& player, int index, size_t total) {
     int side_idx = index % 4;
     int side_pos = index / 4 + 1;
     int total_per_side = (int)total / 4;
@@ -138,6 +149,7 @@ void Game::init_player(PlayerPtr player, int index, size_t total) {
         dx = 0;
         dy = 1;
         currendDirection = Directions::DOWN;
+        player.snake->tile_direction = Directions::UP;
         break;
 
     case Directions::DOWN:
@@ -146,6 +158,7 @@ void Game::init_player(PlayerPtr player, int index, size_t total) {
         dx = 0;
         dy = -1;
         currendDirection = Directions::UP;
+        player.snake->tile_direction = Directions::DOWN;
         break;
 
     case Directions::LEFT:
@@ -154,6 +167,7 @@ void Game::init_player(PlayerPtr player, int index, size_t total) {
         dx = 1;
         dy = 0;
         currendDirection = Directions::RIGTH;
+        player.snake->tile_direction = Directions::LEFT;
         break;
 
     case Directions::RIGTH:
@@ -162,19 +176,19 @@ void Game::init_player(PlayerPtr player, int index, size_t total) {
         dx = -1;
         dy = 0;
         currendDirection = Directions::LEFT;
+        player.snake->tile_direction = Directions::RIGTH;
         break;
 
     default:
         throw std::logic_error("invalid direction");
     }
 
-    auto snake = player->snake;
+    auto& snake = player.snake;
     for (int i = 0; i < INIT_PLAYER_LENGTH; ++i, x += dx, y += dy) {
         snake->body.emplace(snake->body.begin(), x, y);
     }
 
     // Сегмент змеи на 100% находится в этой ячейке
-    snake->percent = 100;
-    player->SetDirection(currendDirection);
+    player.SetDirection(currendDirection);
     state.snakes.push_back(snake);
 }

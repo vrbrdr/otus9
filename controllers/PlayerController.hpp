@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GameState.hpp"
+#include "../GameState.hpp"
 #include <array>
 #include <atomic>
 #include <memory>
@@ -8,15 +8,18 @@
 class PlayerController {
   public:
     PlayerController() {}
+    virtual ~PlayerController() {};
 
-    virtual void publish_state(GameState& state) = 0;
+    virtual uint8_t Connect(uint8_t index) = 0;
+    
+    virtual void Publish(uint8_t player, GameState& state) = 0;
 
-    inline Directions get_direction() {
+    virtual Directions get_direction() {
         return direction;
     };
 
-    inline void set_direction(Directions direction) {
-        this->direction = direction;
+    inline void set_direction(Directions _direction) {
+        direction = _direction;
     };
 
   private:

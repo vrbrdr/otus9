@@ -10,19 +10,19 @@ class Game {
   private:
     const int INIT_PLAYER_LENGTH = 6;
     GameState state;
-    Players players;
+    const Players players;
 
   public:
-    Game(Players& players) : players{players} {};
+    Game(const Players& players) : players{players} {};
     GameState& Init();
     GameState& CalcState(uint64_t distance);
 
   private:
-    void update_deaths();
+    void update_collisions();
     bool check_border(SnakeSegment& p);
-    bool find_interception(SnakeSegment& p, SnakePtr Snake, bool skip_head);
-    Foods::const_iterator food_interception(SnakeSegment& p);
+    bool find_interception(FieldPoint& p, Snake &Snake, bool skip_head);
+    Foods::const_iterator food_interception(FieldPoint& p);
     void create_food();
-    void init_player(PlayerPtr player, int index, size_t total);
+    void init_player(Player &player, int index, size_t total);
     void move_snake(Snake& snake, uint64_t distance);
 };
