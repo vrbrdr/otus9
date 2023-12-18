@@ -18,7 +18,7 @@ set(COMMON_SRCS
 )
 
 add_executable(snake_test 
-  serialisation_tests.cpp
+  serialization_tests.cpp
   ${COMMON_SRCS})
 
 target_link_libraries(snake_test GTest::gtest_main gmock)
