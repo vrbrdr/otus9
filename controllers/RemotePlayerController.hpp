@@ -16,9 +16,7 @@ class RemotePlayerController : public RemoteController {
         RemoteController::~RemoteController();
     }
 
-#pragma warning(push)
-#pragma warning(disable : 4100)
-    std::shared_ptr<GameState> GetState() override{
+    std::shared_ptr<GameState> GetState() override {
         //!!!!!! подумать об использовании total_distance;
         auto const& message = connection->Receive();
         if (!message.IsEmpty()) {
@@ -26,12 +24,11 @@ class RemotePlayerController : public RemoteController {
         }
 
         return nullptr;
-    };   
-#pragma warning(pop)    
+    };
 
-    void SendState(GameState& state) override{
+    void SendState(GameState& state) override {
         if (state.force_exchange ||
-            (state.total_distance - last_publish_distance) > 5) {
+            (state.total_distance - last_publish_distance) > 30) {
 
             last_publish_distance = state.total_distance;
 

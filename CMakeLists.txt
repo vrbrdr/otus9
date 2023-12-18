@@ -19,19 +19,32 @@ FetchContent_Declare(SFML
 FetchContent_MakeAvailable(SFML)
 
 set(COMMON_SRCS
+controllers/EmptyController.hpp
 controllers/KeyboardPlayerController.hpp
 controllers/PlayerController.hpp
+controllers/RemoteController.hpp
 controllers/RemotePlayerController.hpp
 controllers/RemoteServerController.hpp
 
+device/Device.hpp
+device/DrawDevice.hpp
+device/InputDevice.hpp
+
 network/Message.hpp
 network/Network.hpp
-network/SfmtNetwork.hpp
+
+sfml/SfmlDevice.hpp
+sfml/SfmlDrawDevice.cpp
+sfml/SfmlDrawDevice.hpp
+sfml/SfmlInputDevice.cpp
+sfml/SfmlInputDevice.hpp
+sfml/SfmlNetExchange.cpp
+sfml/SfmlNetExchange.hpp
+sfml/SfmlTcpGameClient.hpp
+sfml/SfmlTcpGameServer.hpp
 
 Application.cpp
 Application.hpp
-Canvas.cpp
-Canvas.hpp
 Game.cpp
 Game.hpp
 GameState.hpp

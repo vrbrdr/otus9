@@ -96,9 +96,10 @@ struct Message {
             memcpy(message + copy_index, &snakes_infos[0],
                    sizeof(SnakeInfo) * snakes_infos.size());
             copy_index += sizeof(SnakeInfo) * snakes_infos.size();
-
-            memcpy(message + copy_index, &snakes_segments[0],
-                   sizeof(SnakeSegment) * snakes_segments.size());
+            if (snakes_segments.size() > 0) {
+                memcpy(message + copy_index, &snakes_segments[0],
+                       sizeof(SnakeSegment) * snakes_segments.size());
+            }
         }
 
         fill();
@@ -143,7 +144,7 @@ struct Message {
 
     std::shared_ptr<GameState> GetGameState() const {
         auto pgs = std::make_shared<GameState>();
-        auto &gs = *pgs;
+        auto& gs = *pgs;
 
         size_t index = sizeof(MessageHeader);
 
@@ -173,9 +174,9 @@ struct Message {
                 auto snake = std::make_shared<Snake>(sinfos[snake_idx].index);
                 gs.snakes.push_back(snake);
 
-                snake->direction = sinfos[snake_idx].direction;
-                snake->tile_direction = sinfos[snake_idx].tile_direction;
-                
+                snake->set_direction(sinfos[snake_idx].direction);
+                snake->set_tile_direction(sinfos[snake_idx].tile_direction);
+
                 if (sinfos[snake_idx].IsDie) {
                     snake->Die();
                 }
@@ -228,9 +229,9 @@ struct Message {
         bool IsDie;
 
         SnakeInfo(Snake& snake)
-            : index{snake.index}, direction{snake.direction},
-              tile_direction{snake.tile_direction}, size{snake.body.size()},
-              IsDie{snake.IsDie()} {}
+            : index{snake.index}, direction{snake.get_direction()},
+              tile_direction{snake.get_tile_direction()},
+              size{snake.body.size()}, IsDie{snake.IsDie()} {}
     };
 };
 

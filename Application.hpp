@@ -1,26 +1,23 @@
 #pragma once
 
-#include "Canvas.hpp"
 #include "Player.hpp"
 #include "controllers/KeyboardPlayerController.hpp"
 #include "controllers/RemotePlayerController.hpp"
+#include "device/Device.hpp"
+#include "device/DrawDevice.hpp"
+#include "device/InputDevice.hpp"
 #include "network/Network.hpp"
-#include <SFML/Window/Event.hpp>
 #include <map>
 #include <memory>
 
-enum class ServerTypes { LOCAL, CLIENT, SERVER };
-
 class Application {
   private:
-    const int SPEED_PER_SEC = 50; //% клетки в секунду
     const ServerTypes type;
     std::shared_ptr<RemotePlayerProvider> remotePlayerProvider;
     Players players;
-    Canvas canvas;
-    std::shared_ptr<sf::RenderWindow> window;
-    std::map<sf::Keyboard::Key, std::pair<Directions, PlayerControllerPtr>>
-        key_mapping;
+    std::unique_ptr<Device> device;
+    std::shared_ptr<DrawDevice> draw_device;
+    std::shared_ptr<InputDevice> input_device;
 
   public:
     Application(ServerTypes type, const char* ip, uint16_t port,
@@ -29,15 +26,13 @@ class Application {
     void Run();
 
   private:
-    void createServerPlayers(uint8_t local_players);
+    void createLocalPlayers(uint8_t local_players);
+    void createServerPlayers();
     void createClientPlayers();
 
-    PlayerPtr createLocalPlayer(uint8_t index,
-                                std::array<sf::Keyboard::Key, 4> sf_directions);
-    void
-    registerKeyboardController(PlayerControllerPtr controller,
-                               std::array<sf::Keyboard::Key, 4> sf_directions);
-    RemotePlayerProvider*
-    getRemotePlayerProvider(const char* ip, uint16_t port);
+    PlayerPtr createLocalPlayer(uint8_t index);
+    void registerKeyboardController(PlayerControllerPtr controller);
+    RemotePlayerProvider* getRemotePlayerProvider(const char* ip,
+                                                  uint16_t port);
     void processEvents();
 };

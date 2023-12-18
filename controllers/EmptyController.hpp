@@ -1,27 +1,29 @@
-
 #pragma once
 
 #include "PlayerController.hpp"
 
 class EmptyController : public PlayerController {
-  protected:
+  private:
+    SnakePtr snake;
+
   public:
-    EmptyController() = default;
+    EmptyController(SnakePtr snake) : snake{snake} {};
 
     ~EmptyController() override {
         PlayerController::~PlayerController();
     }
 
-#pragma warning(push)
-#pragma warning(disable : 4100)
-        std::shared_ptr<GameState> GetState() override {
+    std::shared_ptr<GameState> GetState() override {
         return nullptr;
     }
 
-    virtual void SendState(GameState& state) override {}
-#pragma warning(pop)
+    virtual void SendState(GameState&) override {}
 
     uint8_t Connect(uint8_t index) override {
         return index;
+    }
+
+    Directions get_direction() override {
+        return snake->get_direction();
     }
 };

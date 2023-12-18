@@ -153,10 +153,10 @@ void Game::init_player(Player& player, int index, size_t total) {
     }
 
     int x, y, dx, dy;
-    player.snake->tile_direction = (Directions)side_idx;
+    player.snake->set_tile_direction((Directions)side_idx);
     Directions snakeDirection;
 
-    switch (player.snake->tile_direction) {
+    switch (player.snake->get_tile_direction()) {
     case Directions::UP:
         x = XSIZE / (total_per_side + 1) * side_pos;
         y = 0;

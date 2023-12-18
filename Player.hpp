@@ -30,7 +30,7 @@ class Player {
     }
 
     inline void SetDirection(Directions direction) {
-        snake->direction = direction;
+        snake->set_direction(direction);
         controller->set_direction(direction);
     }
 

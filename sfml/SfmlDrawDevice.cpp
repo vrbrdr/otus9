@@ -1,4 +1,5 @@
-#include "Canvas.hpp"
+#include "SfmlDrawDevice.hpp"
+#include "../GameState.hpp"
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/ConvexShape.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
@@ -6,14 +7,7 @@
 #include <iostream>
 #include <stdexcept>
 
-Canvas::Canvas(std::string header)
-    : window{std::make_shared<sf::RenderWindow>(
-          sf::VideoMode{(unsigned int)(XSIZE * scale),
-                        (unsigned int)(YSIZE * scale)},
-          header, sf::Style::Titlebar | sf::Style::Close,
-          sf::ContextSettings(0, 0, 4))} {}
-
-void Canvas::draw(GameState& state) {
+void SfmlDrawDevice::draw(GameState& state) {
     window->clear(sf::Color::White);
 
     for (auto snake : state.snakes) {
@@ -29,10 +23,10 @@ void Canvas::draw(GameState& state) {
     window->display();
 }
 
-void Canvas::draw_snake(Snake& snake, size_t reverce_percent) {
-    if(snake.body.size() == 0){
+void SfmlDrawDevice::draw_snake(Snake& snake, size_t reverce_percent) {
+    if (snake.body.size() == 0) {
         return;
-        //throw std::logic_error("snake.body.size() == 0");
+        // throw std::logic_error("snake.body.size() == 0");
     }
 
     Directions dir;
@@ -48,12 +42,12 @@ void Canvas::draw_snake(Snake& snake, size_t reverce_percent) {
     }
 
     draw_snake_segment(snake, snake.body[snake.body.size() - 1],
-                       reverce_percent, snake.tile_direction);
+                       reverce_percent, snake.get_tile_direction());
 }
 
-void Canvas::draw_snake_segment(Snake& snake, SnakeSegment& head,
-                                size_t reverce_percent,
-                                Directions tile_directon) {
+void SfmlDrawDevice::draw_snake_segment(Snake& snake, SnakeSegment& head,
+                                        size_t reverce_percent,
+                                        Directions tile_directon) {
 
     float scaled_x = (float)head.x * scale;
     float scaled_y = (float)head.y * scale;
@@ -100,8 +94,9 @@ void Canvas::draw_snake_segment(Snake& snake, SnakeSegment& head,
     window->draw(rect);
 }
 
-void Canvas::draw_snake_head(Snake& snake, SnakeSegment& serment,
-                             size_t reverce_percent, Directions tile_directon) {
+void SfmlDrawDevice::draw_snake_head(Snake& snake, SnakeSegment& serment,
+                                     size_t reverce_percent,
+                                     Directions tile_directon) {
     float fscale = (float)scale;
     float fscale4 = (float)scale / 4;
 
@@ -119,7 +114,7 @@ void Canvas::draw_snake_head(Snake& snake, SnakeSegment& serment,
     move_back(tile_directon, reverce_percent, &rect);
     window->draw(rect);
 
-    switch (snake.direction) {
+    switch (snake.get_direction()) {
     case Directions::UP:
         rect = sf::RectangleShape(sf::Vector2f{fscale, fscale4});
         rect.setPosition(sf::Vector2f{scaled_x, scaled_y});
@@ -149,7 +144,7 @@ void Canvas::draw_snake_head(Snake& snake, SnakeSegment& serment,
     window->draw(rect);
 }
 
-void Canvas::draw_food(Food& food) {
+void SfmlDrawDevice::draw_food(Food& food) {
     float scaled_x = (float)food.x * scale;
     float scaled_y = (float)food.y * scale;
 
@@ -164,8 +159,8 @@ void Canvas::draw_food(Food& food) {
     window->draw(rect);
 }
 
-void Canvas::move_back(Directions direction, uint64_t reverce_percent,
-                       sf::Shape* shape) {
+void SfmlDrawDevice::move_back(Directions direction, uint64_t reverce_percent,
+                               sf::Shape* shape) {
     auto pos = shape->getPosition();
 
     switch (direction) {

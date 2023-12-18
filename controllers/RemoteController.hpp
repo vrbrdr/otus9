@@ -20,5 +20,5 @@ class RemoteController : public PlayerController {
     uint8_t Connect(uint8_t index) override {
         player = index;
         return player;
-    };
+    }
 };

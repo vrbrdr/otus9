@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 SnakeSegment Player::make_head(SnakeSegment& prev_head) {
-    switch (snake->direction) {
+    switch (snake->get_direction()) {
     case Directions::LEFT:
         return SnakeSegment{prev_head.x - 1, prev_head.y};
 
@@ -26,13 +26,13 @@ void Player::Move(uint64_t move_segments) {
     }
 
     if(controller->get_direction()!=Directions::UNDEFINED){
-        snake->direction = controller->get_direction();
+        snake->set_direction(controller->get_direction());
     }
 
     for (int i = 0; i < move_segments; i++) {
-        snake->tile_direction =
+        snake->set_tile_direction(
             snake->TileDirection(snake->body[snake->body.size() - 2],
-                                 snake->body[snake->body.size() - 1]);
+                                 snake->body[snake->body.size() - 1]));
 
         snake->body.pop_back();
         auto head = snake->body.begin();

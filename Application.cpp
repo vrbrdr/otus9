@@ -2,7 +2,7 @@
 #include "Game.hpp"
 #include "controllers/EmptyController.hpp"
 #include "network/Network.hpp"
-#include "network/SfmtNetwork.hpp"
+#include "sfml/SfmlDevice.hpp"
 #include <array>
 #include <chrono>
 #include <iostream>
@@ -13,6 +13,7 @@
 namespace {
     std::string make_header(ServerTypes type, const char* ip, uint16_t port) {
         if (type == ServerTypes::CLIENT) {
+
             return std::string("CLIENT\\") + ip + ":" + std::to_string(port);
         }
         if (type == ServerTypes::SERVER) {
@@ -26,17 +27,19 @@ namespace {
 
 Application::Application(ServerTypes type, const char* ip, uint16_t port,
                          uint8_t local_players)
-    : type{type}, canvas{make_header(type, ip, port)} {
+    : type{type} {
 
-    window = canvas.window;
+    device = std::make_unique<SfmlDevice>(make_header(type, ip, port));
+    draw_device = device->get_draw();
+    input_device = device->get_input();
 
-    remotePlayerProvider = std::shared_ptr<RemotePlayerProvider>(
-        getRemotePlayerProvider(ip, port));
+    remotePlayerProvider = device->GetNetworkPlayerProvider(type, ip, port);
 
     if (type == ServerTypes::CLIENT) {
         createClientPlayers();
     } else {
-        createServerPlayers(local_players);
+        createLocalPlayers(local_players);
+        createServerPlayers();
     }
 }
 
@@ -45,68 +48,66 @@ void Application::Run() {
 
     auto& state = game.Init();
 
-    canvas.draw(state);
+    draw_device->draw(state);
 
     const auto start = std::chrono::high_resolution_clock::now();
     uint64_t prev_distance = 0;
 
-    while (window->isOpen()) {
+    while (device->alive()) {
         auto now = std::chrono::high_resolution_clock::now();
         auto total_duration =
             std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
 
         auto total_distance = SPEED_PER_SEC * total_duration.count() / 1000;
 
-        state = game.CalcState(total_distance - prev_distance);
+        state = game.CalcState(total_distance - prev_distance);       
         prev_distance = total_distance;
 
-        canvas.draw(state);
+        
+        draw_device->draw(state);
         processEvents();
     }
 }
-
-void Application::createServerPlayers(uint8_t local_players) {
-    static std::array<sf::Keyboard::Key, 4> p1_keys = {
-        sf::Keyboard::Key::Up, sf::Keyboard::Key::Down, sf::Keyboard::Key::Left,
-        sf::Keyboard::Key::Right};
-
-    static std::array<sf::Keyboard::Key, 4> p2_keys = {
-        sf::Keyboard::Key::W, sf::Keyboard::Key::S, sf::Keyboard::Key::A,
-        sf::Keyboard::Key::D};
-
+void Application::createLocalPlayers(uint8_t local_players) {
     switch (local_players) {
     case 0:
         break;
 
     case 2:
-        players.push_back(createLocalPlayer(1, p2_keys));
+        players.push_back(createLocalPlayer(0));
+        players.push_back(createLocalPlayer(1));
         break;
 
     case 1:
-        players.push_back(createLocalPlayer(0, p1_keys));
+        players.push_back(createLocalPlayer(0));
         break;
 
     default:
         throw std::logic_error("Invalid local users count");
     }
+}
+
+void Application::createServerPlayers() {
 
     if (!remotePlayerProvider) {
         return;
     }
+
+    uint8_t players_cout = (uint8_t)players.size();
 
     //!!!!!! ждем клиентов в течении фиксированного таймаута
     const int timeoutsec = 200;
     const auto timeout = std::chrono::high_resolution_clock::now() +
                          std::chrono::seconds{timeoutsec};
 
-    while (window->isOpen() &&
+    while (device->alive() &&
            std::chrono::high_resolution_clock::now() < timeout) {
         auto controller = remotePlayerProvider->AcceptClient();
 
         if (controller) {
-            auto pidx = controller->Connect(local_players++);
-            auto p = std::make_shared<Player>(
-                pidx, std::shared_ptr<PlayerController>(controller));
+            auto pidx = controller->Connect(players_cout++);
+            auto p =
+                std::make_shared<Player>(pidx, PlayerControllerPtr(controller));
             players.push_back(p);
             return;
         }
@@ -116,10 +117,6 @@ void Application::createServerPlayers(uint8_t local_players) {
 }
 
 void Application::createClientPlayers() {
-    static std::array<sf::Keyboard::Key, 4> p1_keys = {
-        sf::Keyboard::Key::Up, sf::Keyboard::Key::Down, sf::Keyboard::Key::Left,
-        sf::Keyboard::Key::Right};
-
     if (!remotePlayerProvider) {
         throw std::logic_error("remotePlayerProvider == null");
     }
@@ -129,16 +126,16 @@ void Application::createClientPlayers() {
     const auto timeout = std::chrono::high_resolution_clock::now() +
                          std::chrono::seconds{timeoutsec};
 
-    while (window->isOpen() &&
+    while (device->alive() &&
            std::chrono::high_resolution_clock::now() < timeout) {
         auto controller = remotePlayerProvider->AcceptClient();
 
         if (controller) {
             auto pidx = controller->Connect(0);
-            auto p = std::make_shared<Player>(
-                pidx, std::shared_ptr<PlayerController>(controller));
+            auto p =
+                std::make_shared<Player>(pidx, PlayerControllerPtr(controller));
 
-            registerKeyboardController(controller, p1_keys);
+            registerKeyboardController(controller);
             for (;;) {
                 auto gs = controller->GetState();
                 if (!gs) {
@@ -152,12 +149,12 @@ void Application::createClientPlayers() {
                             ? p
                             : std::make_shared<Player>(
                                   s->index,
-                                  std::shared_ptr<PlayerController>(
-                                      std::make_shared<EmptyController>()));
+                                  PlayerControllerPtr(
+                                      std::make_shared<EmptyController>(s)));
 
-                    new_player->SetDirection(s->direction);
+                    new_player->SetDirection(s->get_direction());
                     new_player->snake = s;
-                    players.push_back(new_player);                    
+                    players.push_back(new_player);
                 }
                 return;
             }
@@ -167,57 +164,17 @@ void Application::createClientPlayers() {
     }
 }
 
-PlayerPtr
-Application::createLocalPlayer(uint8_t index,
-                               std::array<sf::Keyboard::Key, 4> sf_directions) {
+PlayerPtr Application::createLocalPlayer(uint8_t index) {
     auto controller = std::make_shared<KeyboardPlayerController>();
-    registerKeyboardController(controller, sf_directions);
+    registerKeyboardController(controller);
 
     return std::make_shared<Player>(index, controller);
 }
 
-void Application::registerKeyboardController(
-    PlayerControllerPtr controller,
-    std::array<sf::Keyboard::Key, 4> sf_directions) {
-
-    static std::array directions{Directions::UP, Directions::DOWN,
-                                 Directions::LEFT, Directions::RIGTH};
-
-    for (int i = 0; i < directions.size(); i++) {
-        key_mapping.emplace(sf_directions[i],
-                            std::pair{directions[i], controller});
-    }
-}
-
-RemotePlayerProvider* Application::getRemotePlayerProvider(const char* ip,
-                                                           uint16_t port) {
-    switch (type) {
-    case ServerTypes::LOCAL:
-        return nullptr;
-
-    case ServerTypes::SERVER:
-        return new SftmTcpGameServer(ip, port);
-
-    case ServerTypes::CLIENT:
-        return new SftmTcpGameClient(ip, port);
-
-    default:
-        throw std::logic_error("Invalid ServerTypes value");
-    }
+void Application::registerKeyboardController(PlayerControllerPtr controller) {
+    input_device->Register(controller);
 }
 
 void Application::processEvents() {
-    for (sf::Event event{}; window->pollEvent(event); /**/) {
-        switch (event.type) {
-        case sf::Event::EventType::Closed:
-            window->close();
-            break;
-
-        case sf::Event::EventType::KeyPressed:
-            const auto& mapitem = key_mapping.find(event.key.code);
-            if (mapitem != key_mapping.end()) {
-                mapitem->second.second->set_direction(mapitem->second.first);
-            }
-        }
-    }
+    input_device->Read();
 }

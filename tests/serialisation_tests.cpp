@@ -33,8 +33,8 @@ namespace {
 
         for (int i = 0; i < 3; ++i) {
             auto s = std::make_shared<Snake>(i + 100);
-            s->direction = Directions::LEFT;
-            s->tile_direction = Directions::RIGTH;
+            s->set_direction(Directions::LEFT);
+            s->set_tile_direction(Directions::RIGTH);
 
             for (int j = 0; j < i * 3 + 5; ++j) {
                 s->body.emplace_back(i + j, i - j);

@@ -1,15 +1,10 @@
 #pragma once
 
+#include "Consts.hpp"
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <vector>
-#include <iostream>
-
-const static uint8_t XSIZE = 30;
-const static uint8_t YSIZE = 30;
-
-enum class Directions : uint8_t { LEFT, RIGTH, UP, DOWN, UNDEFINED };
-enum class Colors : uint8_t { RED, GREEN, BLUE, YELLOW, MAGENTA, CYAN, MAX };
 
 #pragma pack(push, 1)
 struct FieldPoint final {
@@ -56,28 +51,42 @@ using Foods = std::vector<Food>;
 using SnakeSegments = std::vector<SnakeSegment>;
 
 struct Snake {
-    uint8_t index;
-    Directions direction;
-    Directions tile_direction;
-    Colors color;
+    const uint8_t index;
+    const Colors color;
     SnakeSegments body;
 
     Snake(uint8_t index)
         : index{index}, color{(Colors)(index % (uint8_t)Colors::MAX)} {}
 
-    void Grow(int count) {
+    void set_direction(Directions _direction) {
+        direction = _direction;
+    }
+
+    Directions get_direction() {
+        return direction;
+    }
+
+    void set_tile_direction(Directions _direction) {
+        tile_direction = _direction;
+    }
+
+    Directions get_tile_direction() {
+        return tile_direction;
+    }
+
+    inline void Grow(int count) {
         auto tail = body[body.size() - 1];
         for (int i = 0; i < count; i++) {
             body.push_back(tail);
         }
     }
 
-    void Die() {
+    inline void Die() {
         is_die = true;
         body.clear();
     }
 
-    bool IsDie() {
+    inline bool IsDie() {
         return is_die;
     }
 
@@ -129,6 +138,8 @@ struct Snake {
 
   private:
     bool is_die = false;
+    Directions direction;
+    Directions tile_direction;
 };
 
 using SnakePtr = std::shared_ptr<Snake>;
@@ -139,7 +150,7 @@ struct GameState {
     Snakes snakes;
     Foods foods;
 
-    bool force_exchange =false;
+    bool force_exchange = false;
 
     inline uint64_t percent() {
         return total_distance % 100;

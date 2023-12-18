@@ -15,6 +15,6 @@ class NetExchange {
 
 class RemotePlayerProvider {
   public:
-    virtual std::shared_ptr<PlayerController> AcceptClient() = 0;
+    virtual PlayerControllerPtr AcceptClient() = 0;
     virtual ~RemotePlayerProvider(){};
 };
